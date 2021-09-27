@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.db.anagramsdatabase.AnagramsMapp">
+
+    <select id="print" resultType="com.db.anagramsdatabase.Anagram" fetchSize="500">
+        SELECT distinct ARRAY_AGG(distinct word), sortedWord FROM list GROUP BY sortedWord having count(word) > 3;
+    </select>
+
+    <select id="sort">
+        CREATE or REPLACE FUNCTION sort1(x TEXT) RETURNS TEXT AS $$
+        select string_agg(c, '') as s
+        from   (select unnest(regexp_split_to_array($1, '')) as c
+                order by c) as t;
+        $$ LANGUAGE SQL IMMUTABLE;
+
+    </select>
+    <select id="create">
+        DROP TABLE IF EXISTS list;
+        CREATE TABLE IF NOT EXISTS list
+        (
+            word       varchar,
+            sortedWord varchar GENERATED ALWAYS AS
+                           ( sort1(word) ) STORED
+        );
+    </select>
+
+    <select id="export">
+        COPY list (word) FROM '/Users/gelum/Desktop/anagram.txt';
+    </select>
+
+</mapper>
